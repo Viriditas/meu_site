@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Contato - Meu Site{% endblock %}
+
+
+{% block content %}
+    <h2>Contato</h2>
+    <p>Preencha o formulário abaixo para enviar uma mensagem:</p>
+
+    <form method="POST" action="/contato">
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required><br><br>
+        
+        <label for="mensagem">Mensagem:</label>
+        <textarea name="mensagem" id="mensagem" rows="4" cols="40" required></textarea><br><br>
+
+        <button type="submit">Enviar</button>
+    </form>
+    
+    
+    {% with mensagens = get_flashed_messages() %}
+        {% if mensagens %}
+            <ul style="color: green;">
+                {% for msg in mensagens %}
+                    <li>{{msg}}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+{% endblock %}

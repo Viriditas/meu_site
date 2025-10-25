@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Mensagens Recebidas{% endblock %}
+
+{% block content %}
+    <h2>Mensagens Recebidas</h2>
+
+    {% if mensagens %}
+        <ul>
+            {% for id, nome, msg in mensagens %}
+                <li><strong>{{ nome }}</strong>: {{ msg }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhuma mensagem recebida ainda.</p>
+    {% endif %}
+{% endblock %}
