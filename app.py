@@ -1,22 +1,19 @@
 import eventlet
-eventlet.monkey_patch()
+eventlet.monkey_patch()  # 👈 precisa vir antes de qualquer import Flask
 
 from flask import Flask, render_template, request, session, redirect, url_for
-from flask_socketio import SocketIO, send
-from datetime import datetime
-import pytz
+from flask_socketio import SocketIO, emit
+from datetime import datetime, timedelta, timezone
+
+# Fuso horário do Brasil (UTC-3)
+BRASIL_TZ = timezone(timedelta(hours=-3))
 
 app = Flask(__name__)
-app.secret_key = "sua_chave_secreta"  # altere para algo seguro
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.secret_key = "chave-secreta"
+socketio = SocketIO(app, async_mode='eventlet')
 
-# Lista de usuários conectados
 usuarios_conectados = set()
 
-# Fuso horário de Brasília
-brasilia = pytz.timezone('America/Sao_Paulo')
-
-# Página de login
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -26,38 +23,41 @@ def login():
             return redirect(url_for("chat"))
     return render_template("login.html")
 
-# Página do chat
 @app.route("/chat")
 def chat():
-    if "usuario" not in session:
+    usuario = session.get("usuario")
+    if not usuario:
         return redirect(url_for("login"))
-    return render_template("chat.html", usuario=session["usuario"])
+    return render_template("chat.html", usuario=usuario)
 
-# Conexão de usuário
-@socketio.on('connect')
+@socketio.on("connect")
 def handle_connect(auth=None):
-    usuario = session.get('usuario', 'Anônimo')
+    usuario = session.get("usuario", "Anônimo")
     usuarios_conectados.add(usuario)
-    send(f"🔵 {usuario} entrou no chat!")
-    socketio.emit('user_count', len(usuarios_conectados))
 
-# Desconexão de usuário
-@socketio.on('disconnect')
+    # Envia mensagem global
+    hora = datetime.now(BRASIL_TZ).strftime("%H:%M:%S")
+    socketio.emit("message", f"[{hora}] 🔵 {usuario} entrou no chat.")
+    socketio.emit("user_count", len(usuarios_conectados), to=None)  # para todos
+
+@socketio.on("disconnect")
 def handle_disconnect():
-    usuario = session.get('usuario', 'Anônimo')
-    usuarios_conectados.discard(usuario)
-    send(f"🔴 {usuario} saiu do chat!")
-    socketio.emit('user_count', len(usuarios_conectados))
+    usuario = session.get("usuario", "Anônimo")
+    if usuario in usuarios_conectados:
+        usuarios_conectados.remove(usuario)
 
-# Receber mensagem do cliente
-@socketio.on('mensagem')
-def handle_mensagem(msg):
-    usuario = session.get('usuario', 'Anônimo')
-    # Hora com fuso de Brasília
-    hora = datetime.now(brasilia).strftime("%H:%M")
-    texto = f"{usuario} ({hora}): {msg}"
-    send(texto)
+    hora = datetime.now(BRASIL_TZ).strftime("%H:%M:%S")
+    socketio.emit("message", f"[{hora}] 🔴 {usuario} saiu do chat.")
+    socketio.emit("user_count", len(usuarios_conectados), to=None)
+
+@socketio.on("mensagem")
+def handle_message(msg):
+    usuario = session.get("usuario", "Anônimo")
+    hora = datetime.now(BRASIL_TZ).strftime("%H:%M:%S")
+    texto = f"[{hora}] 💬 {usuario}: {msg}"
+    
+    # Envia mensagem para todos os usuários
+    socketio.emit("message", texto, to=None)
 
 if __name__ == "__main__":
-    # Para testes locais
-    socketio.run(app, host="0.0.0.0", port=5000)
+    socketio.run(app, host="0.0.0.0", port=10000)
