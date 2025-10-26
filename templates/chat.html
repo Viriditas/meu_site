@@ -168,6 +168,10 @@
                 input.value = "";
             }
         };
+      // Atualizar número de usuários online
+        socket.on("user_count", count => {
+            online.textContent = count;
+        });
 
         // Captura o nome do usuário da sessão (passado no Flask)
         const usuario = "{{ usuario }}";
