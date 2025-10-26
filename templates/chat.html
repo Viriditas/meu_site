@@ -1,76 +1,112 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bate-Papo Flask</title>
-<script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-<style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f0f2f5; height: 100vh; display: flex; justify-content: center; align-items: center; }
-
-    .chat-container { width: 400px; height: 650px; background: #fff; border-radius: 10px; display: flex; flex-direction: column; box-shadow: 0 0 10px rgba(0,0,0,0.2); overflow: hidden; }
-
-    .chat-header { background: #0078FF; color: #fff; padding: 15px; font-weight: bold; text-align: center; position: relative; }
-    .chat-header span { position: absolute; right: 15px; font-size: 0.9em; color: #fff; }
-
-    #chat { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-
-    .mensagem { padding: 10px 15px; border-radius: 20px; max-width: 70%; word-wrap: break-word; }
-    .mensagem.own { background: #DCF8C6; align-self: flex-end; }
-    .mensagem.other { background: #ECECEC; align-self: flex-start; }
-
-    .chat-input { display: flex; padding: 10px; border-top: 1px solid #ccc; }
-    .chat-input input { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ccc; outline: none; }
-    .chat-input button { margin-left: 10px; padding: 10px 15px; border: none; border-radius: 20px; background: #0078FF; color: #fff; cursor: pointer; }
-</style>
+    <meta charset="UTF-8">
+    <title>Chat em Tempo Real</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+        }
+        #mensagem-form {
+            display: flex;
+            padding: 10px;
+            background: #222;
+        }
+        #mensagem {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+        }
+        button {
+            background: #00ff99;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-left: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc77;
+        }
+        .info {
+            color: #00ff99;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        .msg {
+            margin: 5px 0;
+        }
+        .msg strong {
+            color: #00ff99;
+        }
+        #status-bar {
+            background: #222;
+            text-align: center;
+            padding: 5px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-<div class="chat-container">
-    <div class="chat-header">Bem-vindo, {{ usuario }} 👋 <span id="user-count">{{ count }}</span> online</div>
-    <div id="chat"></div>
-    <div class="chat-input">
-        <input id="texto" type="text" placeholder="Digite sua mensagem..." autocomplete="off">
-        <button onclick="enviar()">Enviar</button>
+    <div id="status-bar">
+        👤 Usuários online: <span id="online">0</span>
     </div>
-</div>
 
-<script>
-    const socket = io();
-    const chat = document.getElementById('chat');
-    const texto = document.getElementById('texto');
-    const usuario = "{{ usuario }}";
-    const userCount = document.getElementById('user-count');
+    <div id="chat-box"></div>
 
-    socket.on('message', msg => {
-        const div = document.createElement('div');
-        div.textContent = msg;
+    <form id="mensagem-form">
+        <input id="mensagem" type="text" placeholder="Digite uma mensagem..." autocomplete="off">
+        <button>Enviar</button>
+    </form>
 
-        if (msg.startsWith(usuario + " (")) {
-            div.className = 'mensagem own';
-        } else {
-            div.className = 'mensagem other';
-        }
+    <script>
+        const socket = io();
 
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
-    });
+        const usuario = "{{ usuario }}";
+        const chatBox = document.getElementById("chat-box");
+        const form = document.getElementById("mensagem-form");
+        const input = document.getElementById("mensagem");
+        const online = document.getElementById("online");
 
-    socket.on('user_count', count => {
-        userCount.textContent = count;
-    });
+        // Receber mensagens
+        socket.on("message", msg => {
+            const div = document.createElement("div");
+            div.classList.add("msg");
+            div.textContent = msg;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
 
-    function enviar() {
-        const msg = texto.value.trim();
-        if(msg){
-            socket.send(msg);
-            texto.value = '';
-        }
-    }
+        // Enviar mensagem
+        form.addEventListener("submit", e => {
+            e.preventDefault();
+            const msg = input.value.trim();
+            if (msg) {
+                socket.emit("mensagem", msg);
+                input.value = "";
+            }
+        });
 
-    texto.addEventListener('keypress', e => {
-        if(e.key === 'Enter') enviar();
-    });
-</script>
+        // Atualizar número de usuários online
+        socket.on("user_count", count => {
+            online.textContent = count;
+        });
+    </script>
 </body>
 </html>
