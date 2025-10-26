@@ -5,24 +5,45 @@
 {% block content %}
     <h2>Área Administrativa</h2>
     <p>Faça login para acessar as mensagens recebidas.</p>
-
-    <form method="POST" action="/login">
-        <label for="usuario">Usuário:</label><br>
-        <input type="text" id="usuario" name="usuario" required><br><br>
-
-        <label for="senha">Senha:</label><br>
-        <input type="password" id="senha" name="senha" required><br><br>
-
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar no Chat</title>
+    <style>
+        body {
+            background: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        input {
+            padding: 10px;
+            border: none;
+            outline: none;
+            width: 200px;
+            text-align: center;
+        }
+        button {
+            background: #0f0;
+            border: none;
+            padding: 10px 15px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>Escolha um apelido 💬</h2>
+    <form method="POST">
+        <input type="text" name="nome" placeholder="Digite seu nome..." required>
+        <br>
         <button type="submit">Entrar</button>
     </form>
-
-    {% with mensagens = get_flashed_messages() %}
-      {% if mensagens %}
-        <ul style="color: red;">
-          {% for msg in mensagens %}
-            <li>{{ msg }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-{% endblock %}
+</body>
+</html>

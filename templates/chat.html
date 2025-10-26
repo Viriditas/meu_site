@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bate-Papo Flask</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 2px solid #333;
+        }
+        #mensagem {
+            display: flex;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+        }
+        button {
+            background: #0f0;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        p {
+            margin: 5px 0;
+        }
+        h2 {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Bem-vindo, {{ usuario }} 👋</h2>
+    <div id="chat"></div>
+    <div id="mensagem">
+        <input id="texto" type="text" placeholder="Digite sua mensagem..." autocomplete="off">
+        <button onclick="enviar()">Enviar</button>
+    </div>
+
+    <script>
+        const socket = io();
+        const chat = document.getElementById('chat');
+        const texto = document.getElementById('texto');
+
+        socket.on('message', msg => {
+            const p = document.createElement('p');
+            p.textContent = msg;
+            chat.appendChild(p);
+            chat.scrollTop = chat.scrollHeight;
+        });
+
+        function enviar() {
+            const msg = texto.value.trim();
+            if (msg) {
+                socket.send(msg);
+                texto.value = '';
+            }
+        }
+
+        texto.addEventListener('keypress', e => {
+            if (e.key === 'Enter') enviar();
+        });
+    </script>
+</body>
+</html>

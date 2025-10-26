@@ -1,87 +1,34 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-import sqlite3
+from flask import Flask, render_template, request, redirect, session, url_for
+from flask_socketio import SocketIO, send
+import os
 
 app = Flask(__name__)
-app.secret_key = "chave-secreta-supr-segura"
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'segredo123')
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-def init_db():
-    conn = sqlite3.connect("mensagens.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS mensagens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            mensagem TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+usuarios_conectados = set()
 
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-
-@app.route("/sobre")
-def sobre():
-    return render_template("sobre.html")
-
-
-@app.route("/contato", methods=["GET", "POST"])
-def contato():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        mensagem = request.form["mensagem"]
-
-        conn = sqlite3.connect("mensagens.db")
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO mensagens (nome, mensagem) VALUES (?, ?)", (nome, mensagem))
-        conn.commit()
-        conn.close()
-
-        flash("Mensagem enviada com sucesso! ✅")
-        return redirect(url_for("contato"))
-    
-    return render_template("contato.html")
-
-#Login
-@app.route("/login", methods=["GET", "POST"])
+@app.route('/', methods=['GET', 'POST'])
 def login():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
+    if request.method == 'POST':
+        nome = request.form.get('nome')
+        if nome:
+            session['usuario'] = nome
+            usuarios_conectados.add(nome)
+            return redirect(url_for('chat'))
+    return render_template('login.html')
 
-        #Login e senha
-        if usuario == "admin" and senha == "Samurai100%":
-            session["logado"] = True
-            flash("Login realizado com sucesso!")
-            return redirect(url_for("listar_mensagens"))
-        else:
-            flash("Usário ou senha incorretos")
-    return render_template("login.html")
+@app.route('/chat')
+def chat():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+    return render_template('chat.html', usuario=session['usuario'])
 
-#Logout
-@app.route("/logout")
-def logout():
-    session.pop("logado", None)
-    flash("Você saiu da sessão")
-    return redirect(url_for("login"))
+@socketio.on('message')
+def handle_message(msg):
+    usuario = session.get('usuario', 'Anônimo')
+    texto = f"{usuario}: {msg}"
+    send(texto, broadcast=True)
 
-
-
-#Listar mensagens
-@app.route("/mensagens")
-def listar_mensagens():
-    if not session.get("logado"):
-        flash("Você precisa fazer login para acessar esta página")
-        return redirect(url_for("login"))
-
-    conn = sqlite3.connect("mensagens.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, nome, mensagem FROM mensagens ORDER BY id DESC")
-    mensagens = cursor.fetchall()
-    conn.close()
-    return render_template("mensagens.html", mensagens=mensagens)
-if __name__ == "__main__":
-    init_db()
-    app.run(debug=True)
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=10000)
