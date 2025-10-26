@@ -28,6 +28,12 @@
         flex-shrink: 0;
     }
 
+    #status-bar {
+         background: #222;
+         text-align: center;
+         padding: 5px;
+        font-size: 0.9em;
+        }
     #chat-container {
         flex: 1;
         display: flex;
@@ -125,6 +131,9 @@
 <body>
     <header>
         💬 Bate-Papo Online
+        <div id="status-bar">
+        👤 Usuários online: <span id="online">0</span>  
+         </div>
     </header>
 
     <div id="chat-container">
